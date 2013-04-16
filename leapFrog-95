@@ -1,0 +1,92 @@
+program main
+
+    implicit none
+    integer i, j, k ! loop iterators
+    double precision ss
+    real :: psi_r, psi_im, delta_t_M, delta_x_M
+    real :: matrix_rows, print_offset, matrix_cols
+    
+    complex*16 czero,chalf,cone,ctwo,cthree,cfour,ci 
+    complex*16 ch,cst,cst1,cst2,cst3,cst4,cst5,h2,h3,h24,h1d5,hd25,c27
+    complex*16 a,b,c,r,gam,u,cmn,cpl,a1,b1,c1,r1,gam1,u1,psi_matrix,v,ff,bb
+    complex*16 bet,xj
+    real idint, dt, agbr, gbr, delay, del2, plato2, fwhm2, w2, e2, del1, plato1, fwhm1, w1, e1, nshape, npulse, nerg, emax, de, emin
+    real key5, key4, key3, key2, key1, ll, nn, nf, nprmax, ncmax, ntmax, nxmax
+    integer nfmax
+    
+    parameter(nxmax=381000,ntmax=100000,ncmax=61,nprmax=20000, nfmax=10)
+    
+    common/discr/nf,nn(nfmax),ll(nfmax)
+    common/carry3/psi_matrix(0:nxmax,0:ncmax),v(0:nxmax,0:ncmax)
+      
+    open(50, file='hyd7.inp', status='old')
+
+    ! leapfrog testing file
+    open(95, file="leapfrogtesting.out", status="unknown")
+    open(96, file="initial.out", status="unknown")
+   
+    !read the initial data
+
+    read(50,*) delta_t_M, delta_x_M
+
+    read(50,*) matrix_rows, print_offset, matrix_cols, key1, key2, key3, key4, key5
+
+! read in quantum numbers
+    if(key1 /= 0) then
+        read(50,*) nf
+        read(50,*) nn(1), ll(1), nn(2), ll(2), nn(3), ll(3), nn(4), ll(4), nn(5), ll(5)
+!            do i = 1, nf
+!                read(50,*) nn(i)
+!                read(50,*) ll(i)
+!                write(*,*) nn(i), ll(i)
+!            end do
+    end if
+
+    if(key4 == 1) then
+       read(50,*) emin,de,emax
+    end if
+
+    !nerg = idint((emax-emin)/de) + 1
+    read(50,*) npulse
+
+    if(npulse /= 0) then
+        read(50,*) nshape
+        read(50,*) e1,w1,fwhm1,plato1,del1
+
+        if(npulse == 2) then
+            read(50,*) e2,w2,fwhm2,plato2,del2,delay
+        end if
+    end if
+
+    read(50,*) gbr, agbr
+
+    close(50)
+    
+    !calculate second time step
+      psi_matrix = psi_matrix * exp(ci * dt / 4)
+      ss = delta_t_M / delta_x_M ** 2
+    
+    print *,'starting main loop'
+    
+    do i = 3, ntmax
+        !leapfrog propagation
+        do j = 1, matrix_rows - 1
+        psi_r = real(psi_matrix(j,0))
+        psi_im = aimag(psi_matrix(j,0))
+            if (mod(i, 2) == 1) then
+                !update the real part
+                psi_r = psi_r - ss * aimag(psi_matrix(j+1,0)) -  ss * aimag(psi_matrix(j-1,0)) + 2 * ss * psi_im
+            else
+                !update the imaginary part
+                psi_im = psi_im + ss * real(psi_matrix(j+1,0)) + ss * real(psi_matrix(j-1,0)) - 2 * ss * psi_r
+            end if
+            psi_matrix(j,0) = cmplx(psi_r, psi_im)
+        end do
+    end do
+
+    ! output final wavefunction norm here
+    do k = 1, matrix_rows
+        write(95,*) k * delta_x_M, real(psi_matrix(k,0))**2 + aimag(psi_matrix(k,0))**2 ! leapfrogtesting.out
+    end do
+      
+end main
