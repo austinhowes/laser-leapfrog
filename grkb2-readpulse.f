@@ -41,10 +41,9 @@ c      USE PORTLIB
       open(93,file='wavefn.out',status='unknown')
       open(94,file='cross.out',status='unknown')
 
-      ! leapfrog testing file
+      ! leapfrog testing files
       open(95, file="leapfrogtesting.out", status="unknown")
       open(96, file="initial.out", status="unknown")
-      open(97, file="potential.out", status="unknown")
 
 C**** READ INITIAL DATA
       read(50,*) dt,h
@@ -99,7 +98,8 @@ C**** SET COEFFICIENTS a,b,c AND INPUT FOR SOLVING DE
 52    continue
 
       do k = 1, nx
-         write(96,*) k * h, real(q(k,0))**2 + imag(q(k,0))**2
+         write(96,*) k * h, real(q(k,0)), imag(q(k,0)),
+     >        real(q(k,0))**2 + imag(q(k,0))**2
       end do
 
       kkk=0
@@ -109,28 +109,10 @@ C  MAIN TIME LOOP
       if(nc.eq.0)  ntfin=-1
       if(ntfin.eq.0) ntfin=-1
 
-      ! check the norm
-      norm = 0.d0
-      do k = 1, nx
-         norm = norm + h * real(q(k,0))**2 + imag(q(k,0))**2
-      end do
-      write(91,*) 1, norm
-
 !     calculate second time step
       q = q * exp(ci * dt / 2)
       ss = dt / h ** 2
 
-      ! check the norm
-      norm = 0.d0
-      do k = 1, nx
-         norm = norm + h * real(q(k,0))**2 + imag(q(k,0))**2
-      end do
-      write(91,*) 2, norm
-
-      do xx = 1, nx
-         write(97,*), xx, v(xx,0)
-      end do
- 
       do tt = 3, ntmax
 
 !     leapfrog propagation
@@ -140,15 +122,13 @@ C  MAIN TIME LOOP
             if (mod(tt, 2) .eq. 1) then
                ! update the real part
                psi_r = psi_r - ss * imag(q(xx+1,0))
-     >              -  ss * imag(q(xx-1,0)) + 2 * (ss + 
-     >              real(v(xx,0))*dt)
-     >              * psi_im
+     >              -  ss * imag(q(xx-1,0))
+     >              + 2 * (ss + real(v(xx,0))*dt) * psi_im
             else
                ! update the imaginary part
                psi_im = psi_im + ss * real(q(xx+1,0))
-     >              + ss * real(q(xx-1,0)) - 2 * (ss + 
-     >              real(v(xx,0))*dt)
-     >              * psi_r
+     >              + ss * real(q(xx-1,0))
+     >              - 2 * (ss + real(v(xx,0))*dt) * psi_r
             end if
             q(xx,0) = cmplx(psi_r, psi_im)
          end do
