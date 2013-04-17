@@ -10,9 +10,9 @@ program main
     complex*16 ch,cst,cst1,cst2,cst3,cst4,cst5,h2,h3,h24,h1d5,hd25,c27
     complex*16 a,b,c,r,gam,u,cmn,cpl,a1,b1,c1,r1,gam1,u1,psi_matrix,v,ff,bb
     complex*16 bet,xj
-    real idint, dt, agbr, gbr, delay, del2, plato2, fwhm2, w2, e2, del1, plato1, fwhm1, w1, e1, nshape, npulse, nerg, emax, de, emin
-    real key5, key4, key3, key2, key1, ll, nn, nf, nprmax, ncmax, ntmax, nxmax
-    integer nfmax
+    real idint, dt, agbr, gbr, delay, del2, plato2, fwhm2, w2, e2, del1, plato1, fwhm1, w1, e1, nerg, emax, de, emin
+    integer key5, key4, key3, key2, key1, ll, nn, nf,  nshape, npulse
+    integer nfmax, ncmax, ntmax, nxmax, nprmax
     
     parameter(nxmax=381000,ntmax=100000,ncmax=61,nprmax=20000, nfmax=10)
     
@@ -43,7 +43,7 @@ program main
     end if
 
     if(key4 == 1) then
-       read(50,*) emin,de,emax
+       read(50,*) emin, de, emax
     end if
 
     !nerg = idint((emax-emin)/de) + 1
@@ -89,4 +89,4 @@ program main
         write(95,*) k * delta_x_M, real(psi_matrix(k,0))**2 + aimag(psi_matrix(k,0))**2 ! leapfrogtesting.out
     end do
       
-end main
+end program main
