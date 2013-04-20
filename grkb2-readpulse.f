@@ -6,6 +6,7 @@ C**********************************************************************
 c      USE PORTLIB
       implicit double precision (a-h,o-z)
       integer xx, tt
+      integer npulse
       double precision ss, norm
       parameter(nxmax=381000,ntmax=100000,ncmax=61,nprmax=20000,
      1  nfmax=10)
@@ -109,13 +110,13 @@ C  MAIN TIME LOOP
       if(nc.eq.0)  ntfin=-1
       if(ntfin.eq.0) ntfin=-1
 
-!     calculate second time step
+!Calculate second time step
       q = q * exp(ci * dt / 2)
       ss = dt / h ** 2
 
       do tt = 3, ntmax
 
-!     leapfrog propagation
+!Leapfrog propagation for 1st/3 time loop
          do xx = 1, nx - 1
             psi_r = real(q(xx,0))
             psi_im = imag(q(xx,0))
@@ -138,38 +139,7 @@ C  MAIN TIME LOOP
          end do
          write(91,*) tt, norm
       end do
-
-      ! output final wavefunction
-      do k = 1, nx
-         write(95,*) k * h, real(q(k,0)), imag(q(k,0)),
-     >        real(q(k,0))**2 + imag(q(k,0))**2
-      end do
-     
-      stop
-
-C*****  PROPAGATION FROM DIAGONAL TERM BY tau = dt/2
-      do 17 jj=0,nc
-          do 18 i=1,nx-1  
-             r(i) = q(i,jj)*ff(i,jj) + cst2*(q(i+1,jj)+q(i-1,jj))
-             b(i) = bb(i,jj)
-18        continue
-C         if(b(1).eq.0.)pause 'tridag: rewrite equations'
-          bet=b(1)
-          u(1)=r(1)/bet
-          do 111 j=2,nx-1
-             gam(j)=c(j-1)/bet
-             bet=b(j)-a(j)*gam(j)
-C            if(bet.eq.0.)pause 'tridag failed'
-             u(j)=(r(j)-a(j)*u(j-1))/bet
-111       continue
-          do 112 j=nx-2,1,-1
-             u(j)=u(j)-gam(j+1)*u(j+1)
-112       continue
-          do 113 j=1,nx-1
-             q(j,jj) = u(j)
-113       continue
-17    continue
-C*****end of propagation by dt/2
+!end of 1st loop
 
 C*****PROPAGATION FROM PULSE BY dt
       do 51 j=1,nx-1
@@ -208,29 +178,27 @@ c      do 3111 i=0,nx
 c       write(10,1112) i,x(i),g(i),q(i,0),q(i,1),q(i,2)
 c3111  continue
 
-C***** SECOND PROPAGATION FROM DIAGONAL TERM BY tau = dt/2
-      do 67 jj=0,nc
-          do 68 i=1,nx-1  
-              r(i) = q(i,jj)*ff(i,jj) + cst2*(q(i+1,jj)+q(i-1,jj))
-              b(i) = bb(i,jj)
-68        continue
-C         if(b(1).eq.0.) pause 'tridag: rewrite equations'
-          bet=b(1)
-          u(1)=r(1)/bet
-          do 311 j=2,nx-1
-              gam(j)=c(j-1)/bet
-              bet=b(j)-a(j)*gam(j)
-C             if(bet.eq.0.)pause 'tridag failed'
-              u(j)=(r(j)-a(j)*u(j-1))/bet
-311       continue
-          do 312 j=nx-2,1,-1
-              u(j)=u(j)-gam(j+1)*u(j+1)
-312       continue
-          do 313 j=1,nx-1
-              q(j,jj) = u(j)
-313       continue
-67    continue
-C*****end of second diagonal propagation
+!Leapfrog Prop for 3rd/3 time loop
+      do tt=3, ntmax
+	do xx=1, nx-1
+	  if (mod(tt,2).eq.1) then !update the real part
+	    psi_r = psi_r-ss*imag(q(xx+1,0))-ss*imag(q(xx-1,0))
+     >              + 2*(ss+real(v(xx,0))*dt)*psi_im
+	  else !update the imaginary part
+	    psi_im = psi_im+ss*real(q(xx+1,0))
+     >               + ss*real(q(xx-1,0)) -
+     >               2*(ss+real(v(xx,0))*dt)*psi_r
+	  end if 
+	q(xx,0)=cmplx(psi_r,psi_im)
+        end do
+      end do
+!      Output Updated Wavefunction
+      do k=1,nx
+	write(95,*) k*h, real(q(k,0)), imag(q(k,0)),
+     >              real(q(k,0))**2 + imag(q(k,0))**2
+      end do
+!End of 3rd loop
+
 
 C***PRINTOUT FOR TIME LOOP WITH NUMBER nprint*N (N=1,2,...)
       if(kkk.eq.nprint) then
